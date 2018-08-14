@@ -1,0 +1,314 @@
+---
+title: "STATS101A HW#5"
+author: "SEUNGWOO HONG"
+date: "3/4/2018"
+output: word_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+6.7.3
+```{r, error=TRUE}
+cars <- read.csv("cars04.csv")
+attach(cars)
+
+head(cars)
+```
+
+(a) Decide whether (6.36) is a valid model. Give reasons to support your answer.
+```{r, error=TRUE}
+cars_lm <- lm( SuggestedRetailPrice ~ EngineSize + Cylinders + Horsepower + HighwayMPG + Weight + WheelBase + Hybrid)
+
+summary(cars_lm)
+par(mfrow=c(2,2))
+plot(cars_lm)
+
+# According to the model analysis, 78% of the observations can be explained by the linear model. However the residual plot has slightly curved pattern and left-sided. Normal QQ plot is not perfectly straight and there are some high leverage points and an outlier that meets the Cook's distance measurement. In this regard, it is hard to conclude that the model is valid.
+```
+
+
+
+(b)
+```{r, error=TRUE}
+# Slightly curved pattern in the plot of residuals against fitted values suggests that the variance of the error term is not constant.
+```
+
+
+(c) Identify any bad leverage points for model (6.36).
+```{r, error=TRUE}
+leverages <- hatvalues(cars_lm)
+standardized_residuals <- rstandard(cars_lm)
+residuals <- cars_lm$residuals
+
+outliers <- ( standardized_residuals > 2 ) | ( standardized_residuals < -2 )
+high_lev <- (leverages > 4/nrow(cars))
+
+which( (high_lev == TRUE) & (outliers == TRUE) )
+# These are the points having high leverage as well as standardized residuals outer [-2,2] bound. 
+
+```
+
+
+
+(d) Decide whether (6.37) is a valid model.
+```{r, error=TRUE}
+cars_lm_transformed <- lm( log(SuggestedRetailPrice) ~ I(EngineSize^0.25) + log(Cylinders) + log(Horsepower) + I(HighwayMPG^(-1)) + Weight + log(WheelBase) + Hybrid)
+
+summary(cars_lm_transformed)
+par(mfrow=c(2,2))
+plot(cars_lm_transformed)
+
+# After the Box-Cox transformation method, more than 86% of the observations can be explained by the linear model. Residuals vs. Fitted values graph does not have any pattern, normal QQ plot becomes more straight, and there are less number of leverage points than the one before the transformation. Therefore it can be considered as a valid model. 
+
+```
+
+
+(e) To obtain a final model, the analyst wants to simply remove the two insig-
+nificant predictors (1/x4) (i.e., tHighwayMPG) and log (x6) (i.e., tWheel- Base) from (6.37). Perform a partial F-test to see if this is a sensible strategy.
+```{r, error=TRUE}
+cars_lm_reduced <- lm( log(SuggestedRetailPrice) ~ I(EngineSize^0.25) + log(Cylinders) + log(Horsepower) + Weight + Hybrid)
+
+anova(cars_lm_reduced, cars_lm_transformed)
+
+# There isn't much change in RSS and p-value is 0.9666. This fails to reject the null hypothesis that the two models don't significantly differ. Thus we can conclude that the model can be simplified by removing two insignificant predictors. 
+
+```
+
+
+(f) The analyst’s boss has complained about model (6.37) saying that it fails to take account of the manufacturer of the vehicle (e.g., BMW vs Toyota). Describe how model (6.37) could be expanded in order to estimate the effect of manufacturer on suggested retail price.
+```{r, error=TRUE}
+# We can create a new categorical variable that keeps the manufacturer of the vehicle. The variable may affect only on the intercept, or affect on some other predictors. For the first case, each manufacturer's model would have same coefficients for all the predictors except the intercept. For the other case, the categorical variable may affect on any of one or more predictors to estimate the suggested retail price.
+
+```
+
+
+
+
+
+
+
+
+
+6.7.5
+```{r, error=TRUE}
+pgatour <- read.csv("pgatour2006.csv")
+attach(pgatour)
+
+head(pgatour)
+```
+
+
+
+(a)
+```{r, error=TRUE}
+pgatour_lm <- lm( PrizeMoney ~ DrivingAccuracy + GIR + PuttingAverage + BirdieConversion + SandSaves + Scrambling + PuttsPerRound)
+
+pgatour_lm_recomm <- lm( log(PrizeMoney) ~ DrivingAccuracy + GIR + PuttingAverage + BirdieConversion + SandSaves + Scrambling + PuttsPerRound)
+
+summary(pgatour_lm)
+par(mfrow=c(2,2))
+plot(pgatour_lm)
+
+
+summary(pgatour_lm_recomm)
+par(mfrow=c(2,2))
+plot(pgatour_lm_recomm)
+
+# I strongly agree with this recommendations because R-squared value rises up to 55% from 40%. Aside from the R-squared, residuals are now unpatternly distributed. Also Normal QQ plot had a somewhat flat line, but the transformed model shows a straight diagonal line. Transformed model does not have any bad leverage points as well.
+```
+
+
+(b) Develop a valid full regression model containing all seven potential predictor variables listed above. Ensure that you provide justification for your choice of full model, which includes scatter plots of the data, plots of standardized residuals, and any other relevant diagnostic plots.
+```{r, error=TRUE}
+
+library("alr3")
+
+powerTransform(cbind(DrivingAccuracy,GIR,PuttingAverage,BirdieConversion,SandSaves,Scrambling,PuttsPerRound) ~ 1)
+
+my_pgatour_lm <- lm( log(PrizeMoney) ~ DrivingAccuracy + GIR + PuttingAverage + BirdieConversion + SandSaves + Scrambling + PuttsPerRound)
+
+pgatour_lm_powertransformed <- lm( PrizeMoney ~ I(DrivingAccuracy^0.25) + I(GIR^1.79) + PuttingAverage + I(BirdieConversion^0.8) + SandSaves + I(Scrambling^0.75) + log(PuttsPerRound))
+
+
+summary(pgatour_lm_powertransformed)
+summary(my_pgatour_lm)
+
+
+par(mfrow=c(2,2))
+plot(my_pgatour_lm)
+
+# The recommended model has a better fit and R-squared value than the transformed one with powerTransform function. I've tried a few other transformed models to find a better fit, but all failed. In this regard, it is better to adopt the recommended model which shows well distributed residuals, straight Normal QQ plot, and the Residual VS Leverage plot without any bad leverage points.
+```
+
+
+
+(c) Identify any points that should be investigated. Give one or more reasons to support each point chosen.
+```{r, error=TRUE}
+leverage <- hatvalues(my_pgatour_lm)
+standardized_residual <- rstandard(my_pgatour_lm)
+
+outlier <- ( standardized_residual > 2 ) | ( standardized_residual < -2 )
+high_leverage <- (leverage > 4/nrow(pgatour))
+
+
+which( (high_leverage == TRUE) & (outlier == TRUE) )
+# These are the points having high leverage as well as standardized residuals outer [-2,2] bound. 
+```
+
+
+
+
+(d) Describe any weaknesses in your model.
+```{r, error=TRUE}
+# Even though the points are well distributed on the plots, only 55% of the observations can be explained by the model. Among the seven predictors in order to explain the PrizeMoney, GIR and BirdieConversion can predict the response variable well, meanwhile the multicolinearity is observed among the predictor variables. 
+```
+
+
+
+
+(e) The golf fan wants to remove all predictors with insignificant t-values from the
+full model in a single step. Explain why you would not recommend this approach.
+```{r, error=TRUE}
+pgatour_lm_reduced <- lm( log(PrizeMoney) ~  GIR + BirdieConversion)
+
+anova(pgatour_lm_reduced,my_pgatour_lm)
+
+# According to the partial F-test, the full model is significantly better so we should not remove the insignificant predictors from the model. It is only allowed when the two models do not significantly differ from each other.
+```
+
+
+
+
+
+
+7.5.2
+```{r, error=TRUE}
+Hald <- read.table("Haldcement.txt",header = TRUE, sep = "")
+attach(Hald)
+
+head(Hald)
+full.model <- lm(Y ~ x1+x2+x3+x4)
+```
+
+
+(a) Identify the optimal model or models based on R2adj, AIC, AICC, BIC from the approach based on all possible subsets.
+```{r, error=TRUE}
+library(leaps)
+
+
+X <- cbind(x1, x2, x3, x4) 
+round(cor(X),4)
+
+best.subset <- regsubsets(as.matrix(X),Y) 
+Rsquared <- summary(best.subset) 
+par(mfrow=c(1,1))
+subsets(best.subset,statistic=c("adjr2"),legend=FALSE)
+
+
+Rad <- Rsquared$adjr2
+
+
+m1 <- lm(Y~x1)
+m2 <- lm(Y~x1+x2)
+m3 <- lm(Y~x1+x2+x4)
+
+
+
+#Subset size=1
+n <- length(m1$residuals); p <- 1
+#Calculate AIC
+AIC1 <- extractAIC(m1,k=2)[2]
+#Calculate AICc = AIC + 2k(k+1)/(n-k-1)
+AICc1 <- extractAIC(m1,k=2)[2]+2*(p+2)*(p+3)/(n-p-1)
+#Calculate BIC
+BIC1 <-extractAIC(m1,k=log(n))[2]
+
+#Subset size=2
+p <-2
+#Calculate AIC
+AIC2 <- extractAIC(m2,k=2)[2]
+#Calculate AICc
+AICc2 <- extractAIC(m2,k=2)[2]+2*(p+2)*(p+3)/(n-p-1)
+#Calculate BIC
+BIC2 <- extractAIC(m2,k=log(n))[2]
+
+#Subset size=3
+p <- 3
+#Calculate AIC
+AIC3 <- extractAIC(m3,k=2)[2]
+#Calculate AICc
+AICc3 <- extractAIC(m3,k=2)[2]+2*(p+2)*(p+3)/(n-p-1)
+#Calculate BIC
+BIC3 <- extractAIC(m3,k=log(n))[2]
+
+#Subset size=4
+p <- 4
+#Calculate AIC
+AIC4 <- extractAIC(full.model,k=2)[2]
+#Calculate AICc
+AICc4 <- extractAIC(full.model,k=2)[2]+2*(p+2)*(p+3)/(n-p-1)
+#Calculate BIC
+BIC4 <- extractAIC(full.model,k=log(n))[2]
+
+
+AIC <- c(AIC1,AIC2,AIC3,AIC4)
+AICc <- c(AICc1,AICc2,AICc3,AICc4)
+BIC <- c(BIC1,BIC2,BIC3,BIC4)
+
+
+data.frame(Size=1:4, Radj2=Rad, AIC=AIC, AICc=AICc, BIC=BIC)
+
+# Based on navigating Radj2, AIC, AICc, and BIC of all the possible subsets, the second model [Y~x1+x2] is the optimal model which has the least AICc and BIC. Its R-squared value is not the highest, but high enough to explain the observations like other models do. 
+```
+
+
+(b) Identify the optimal model or models based on AIC and BIC from the approach based on forward selection.
+```{r, error=TRUE}
+mint <- lm(Y~1,data=Hald)
+
+forwardAIC <- step(mint,scope=list(lower=~1, upper=~ x1+x2+x3+x4), direction="forward", data=bridge)
+forwardBIC <- step(mint,scope=list(lower=~1, upper=~ x1+x2+x3+x4), direction="forward", data=bridge, k=log(n))
+
+# [Y ~ x4 + x1 + x2] is the optimal model based on the forward selection. 
+```
+
+
+
+(c) Identify the optimal model or models based on AIC and BIC from the approach based on backward elimination.
+```{r, error=TRUE}
+backAIC <- step(full.model,direction="backward", data=Hald)
+backBIC <- step(full.model,direction="backward", data=Hald, k=log(n))
+
+# [Y ~ x1 + x2] is the optimal model based on the backward selection. 
+```
+
+
+(d) Carefully explain why the models chosen in (a), (b) & (c) are not all the same.
+```{r, error=TRUE}
+# In (b), the forward selection starts with one predictor that has the highest correlation with Y whereas the backward selection starts with the full model then pull out the least significant predictor with large p-value. Due to the difference in these approaches, the chosen models might be different. In forward selection, x4 is selected at the first iteration. x4 might not be included in the 'FINAL' optimal model if some other combination is found to be better than the model with x4. But once we have added x4 at the first iteration in forward selection, it is not possible to take the predictor out from subsequent iterations. In backward selection, on the other hand, it starts with full model in order to find the optimal model thus x4 can be taken out during the procedure. 
+```
+
+
+
+
+(e) Recommend a final model. Give detailed reasons to support your choice.
+```{r, error=TRUE}
+
+summary(m2) # [Y ~ x1 + x2]
+summary(m3) # [Y ~ x4 + x1 + x2]
+
+vif(m2)
+vif(m3)
+
+anova(m3, m2)
+
+# Based on the selection methodologies, I've found the two best candidates, [Y ~ x1 + x2] and [Y ~ x4 + x1 + x2]. x2 and x4 have high variance inflation factor in m3 which implies that they are poorly estimated due to multicollinearity. On the other hand, all the predictors in m2 have really low VIF. Also the partial F-test with m2 and m3 suggests that the model can be simplified to be [Y ~ x1 + x2] because they don't significantly differ. In this regards, [Y ~ x1 + x2] should be the final model. 
+
+```
+
+
+
